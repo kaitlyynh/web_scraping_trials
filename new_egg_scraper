@@ -1,0 +1,32 @@
+from bs4 import BeautifulSoup
+import requests
+import re
+
+target_item = input("Search for: ")
+url_string = "https://www.newegg.com/p/pl?d={}".format(target_item)
+request = requests.get(url_string).text
+soup_object = BeautifulSoup(request, 'html.parser')
+pages = soup_object.find(class_="list-tool-pagination-text").text
+total_pages = pages[pages.find('/')+1::]
+#int(total_pages) + 1
+items_found = {}
+for page_num in range(1, 10):
+    print("*****Current page: *******", page_num)
+    url_string = "https://www.newegg.com/p/pl?d={}&page={}".format(target_item, page_num)
+    request = requests.get(url_string).text
+    soup_object = BeautifulSoup(request, 'html.parser')
+    item_box = soup_object.find(class_="item-cells-wrap border-cells items-grid-view four-cells expulsion-one-cell")
+    items = item_box.find_all(text=re.compile(target_item))
+    for item in items:
+        item_parent = item.parent
+        if item_parent.name == "a":
+            link = item_parent['href']
+            price = soup_object.find(class_="price-current")
+            p_1 = price.strong.string
+            p_2 = price.sup.string
+            final_price = "${}{}".format(p_1, p_2)
+            items_found[item] = {"price": final_price, "link": link}
+for (items, price) in items_found.items():
+    print("Item Found!")
+    print("We found {} at the link {} for ${}".format(items, link, price))
+    print("Next Product: ")
